@@ -24,4 +24,15 @@ class ActiveRecord::Migration
       ON DELETE #{options[:on_delete]}
       ON UPDATE #{options[:on_update]}"
   end
+
+  def self.remove_fk(table_name, column_name)
+    sql = connection.
+      select_one("SHOW CREATE TABLE `#{table_name}`")["Create Table"]
+    match = sql.match(/CONSTRAINT `(.+?)` FOREIGN KEY \(`#{column_name}`\)/)
+    raise "Cannot find #{column_name} FK on #{table_name}!" if match.nil?
+    fk_name = match[1]
+    puts "-- FK removal from #{table_name}: #{column_name} (fk: #{fk_name})"
+    connection.
+      execute("ALTER TABLE `#{table_name}` DROP FOREIGN KEY `#{fk_name}`")
+  end
 end
