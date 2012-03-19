@@ -18,19 +18,23 @@ class ActiveRecord::Migration
       "[#{options[:source_key]}] -> #{target_table}[#{options[:target_key]}] " +
       "(on delete: #{options[:on_delete]}, on update: #{options[:on_update]})"
 
-    connection.execute "ALTER TABLE `#{target_table}`
+    execute "ALTER TABLE `#{target_table}`
       ADD FOREIGN KEY (`#{options[:target_key]}`)
       REFERENCES `#{source_table}` (`#{options[:source_key]}`)
       ON DELETE #{options[:on_delete]}
       ON UPDATE #{options[:on_update]}"
   end
 
-  def self.remove_fk(table_name, column_name)
+  def self.fk_name(table_name, column_name)
     sql = connection.
       select_one("SHOW CREATE TABLE `#{table_name}`")["Create Table"]
     match = sql.match(/CONSTRAINT `(.+?)` FOREIGN KEY \(`#{column_name}`\)/)
     raise "Cannot find #{column_name} FK on #{table_name}!" if match.nil?
-    fk_name = match[1]
+    match[1]
+  end
+
+  def self.remove_fk(table_name, column_name)
+    fk_name = fk_name(table_name, column_name)
     puts "-- FK removal from #{table_name}: #{column_name} (fk: #{fk_name})"
     connection.
       execute("ALTER TABLE `#{table_name}` DROP FOREIGN KEY `#{fk_name}`")
